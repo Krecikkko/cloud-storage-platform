@@ -6,8 +6,8 @@ from sqlalchemy import (
     Text, Index, BigInteger, func
 )
 from sqlalchemy.orm import declarative_base, Mapped, mapped_column, relationship
-
-Base = declarative_base()
+from .base import Base
+from .user import User
 
 class File(Base):
     __tablename__ = "files"

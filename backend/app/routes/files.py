@@ -11,7 +11,7 @@ router = APIRouter(prefix="/api")
 async def get_current_user_id(session: AsyncSession = Depends(get_session)) -> int:
     user = (await session.execute(select(User).where(User.id == 1))).scalars().first()
     if not user:
-        user = User(id=1, email="mock@example.com")
+        user = User(id=1, username="user", email="mock@example.com", password_hash="password", role="admin")
         session.add(user)
         await session.commit()
     return 1

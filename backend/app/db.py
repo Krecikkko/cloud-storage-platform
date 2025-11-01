@@ -1,6 +1,7 @@
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
-from .models.file import Base
+from importlib import import_module
+from .models.base import Base
 
 DATABASE_URL = "sqlite+aiosqlite:///./dev.db"  # dev!!!!; later replace with Postgres
 engine = create_async_engine(DATABASE_URL, echo=False, future=True)
@@ -10,7 +11,14 @@ async def get_session():
     async with AsyncSessionLocal() as session:
         yield session
 
+def _import_models():
+    for m in (
+        ("app.models.user"),
+        ("app.models.file")
+    ):
+        import_module(m)
+
 async def init_db():
-    from app.models import file as models
+    _import_models()
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

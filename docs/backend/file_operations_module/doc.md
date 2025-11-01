@@ -19,4 +19,5 @@ user/<userID>/file/<fileId>/<safe_logical_name>
 ```
 
 ## File metadata
-Metadata of files will be stored in database in the following tables:
+Metadata of files will be stored in database in the following table and with following realtionships:
+![image](files_table.png)

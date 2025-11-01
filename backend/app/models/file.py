@@ -9,14 +9,6 @@ from sqlalchemy.orm import declarative_base, Mapped, mapped_column, relationship
 
 Base = declarative_base()
 
-# ---------- Mock User (temporary) ----------
-# When ready to use authentication and when merged with user module delete that!!!!!
-class User(Base):
-    __tablename__ = "users"
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    email: Mapped[Optional[str]] = mapped_column(String(255), unique=True)
-    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-
 class File(Base):
     __tablename__ = "files"
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)

@@ -1,5 +1,6 @@
 from datetime import datetime
-from sqlalchemy import Column, Integer, ForeignKey, String, DateTime, JSON, CheckConstraint
+from sqlalchemy import Column, Integer, ForeignKey, String, DateTime, JSON, CheckConstraint, Index
+from sqlalchemy.dialects.sqlite import JSON
 from sqlalchemy.orm import relationship
 from .base import Base  # dostosuj import
 
@@ -19,6 +20,8 @@ class LogBook(Base):
             "action in ('login','logout','upload','download','delete')",
             name="ck_log_book_action"
         ),
+        Index('idx_file_version', 'file_id', 'version_number'), 
+        Index('idx_log_timestamp', 'timestamp'),
     )
 
     user = relationship("User", lazy="joined")

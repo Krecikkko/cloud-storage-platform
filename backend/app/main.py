@@ -1,8 +1,14 @@
 from fastapi import FastAPI
-from app.routes import (
+from .routes import (
     users as users_router,
     auth as auth_router,
-    files as files_router
+    files as files_router,
+    fileversion_routes as fileversion_router,
+    log_routes as logbook_router
+)
+from .routes import (
+    file_routes as file,
+    log_routes as log
 )
 from .db import init_db
 from contextlib import asynccontextmanager

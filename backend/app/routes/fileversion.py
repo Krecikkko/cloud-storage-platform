@@ -5,9 +5,9 @@ from zipfile import ZipFile
 from io import BytesIO
 from ..db import get_session, _import_models
 from ..models import file_version, file
-from ..utils.logger import log_action
+from ..utils.logging import log_action
 
-router = APIRouter(prefix="/api/files", tags = ["Files"])
+router = APIRouter(prefix="/api/files", tags = ["File versions"])
 
 @router.get("/{file_id}/versions")
 def list_file_versions(file_id: int, db: Session = Depends(get_session)):

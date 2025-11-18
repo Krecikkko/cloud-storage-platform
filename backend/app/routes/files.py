@@ -15,7 +15,7 @@ from ..utils.auth_deps import get_current_user
 from app.utils.logging import log_action
 from app.core.constants import MAX_UPLOAD_BYTES
 
-router = APIRouter(prefix="/api")
+router = APIRouter(prefix="/api", tags=["Files"])
 
 def validate_file_size(file_obj) -> None:
     file_obj.file.seek(0, 2)

@@ -71,27 +71,6 @@ http://localhost:8000/docs
 
 ---
 
-## 1. Rate Limiting (New Section)
-
-### Environment Requirements
-
-The Rate Limiting mechanism requires an active **Redis** server.
-
-- **Default Redis address:** `redis://localhost:6379/0`
-- **Configurable using environment variable:** `REDIS_URL`
-
-### Rate Limiting Rules
-
-The limits protect the system against brute-force attacks and server overload.  
-Exceeding a limit results in **HTTP 429 – Too Many Requests**.
-
-| Endpoint         | Method | Limit                         | Identifier      | Protection Purpose |
-|------------------|--------|-------------------------------|-----------------|--------------------|
-| `/api/register`  | POST   | 5 attempts / 60 seconds       | IP address      | Mass registration |
-| `/api/login`     | POST   | 10 attempts / 60 seconds      | IP address      | Brute-force attacks |
-| `/api/upload`    | POST   | 3 attempts / 300 seconds (5m) | User ID         | Disk resource abuse |
-
----
 
 ## User Management
 
@@ -237,7 +216,6 @@ Updates a user's role.
 | Framework        | FastAPI |
 | ORM              | SQLAlchemy (Async) |
 | Authentication   | JWT |
-| Rate Limiting    | Redis-based limits on key endpoints |
 | New Endpoints    | User stats, admin user management |
 | User Roles       | `user`, `admin` |
 | API Docs         | `/docs` |

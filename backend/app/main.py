@@ -10,33 +10,15 @@ from .routes import (
 )
 from .db import init_db
 from contextlib import asynccontextmanager
-import redis.asyncio as redis 
-from fastapi_limiter import FastAPILimiter 
-import os 
 
-
-REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("Creating database and tables...")
     await init_db()
     
-    # === Rate Limiting Initialization ===
-    print(f"Initializing Rate Limiter with Redis at {REDIS_URL}...")
-    try:
-        redis_connection = redis.from_url(REDIS_URL, encoding="utf8", decode_responses=True)
-        await FastAPILimiter.init(redis_connection)
-    except Exception as e:
-        print(f"INITIALIZATION ERROR REDIS/FASTAPILIMITER: {e}")
-        
     yield
-    # === Rate Limiter Cleanup ===
-    try:
-        await FastAPILimiter.close() 
-    except Exception:
-        pass 
-        
+
     print("Application shutdown.")
 
 app = FastAPI(lifespan=lifespan)

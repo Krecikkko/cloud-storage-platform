@@ -64,7 +64,7 @@ const VersionHistory = ({ open, onClose, file, onVersionChange }) => {
   };
 
   const handleRollback = async (versionNumber) => {
-    if (window.confirm(`Roll back to version ${versionNumber}?`)) {
+    if (window.confirm(`Roll back to version ${versionNumber}? This will make version ${versionNumber} the current version.`)) {
       try {
         await fileService.rollbackVersion(file.id, versionNumber);
         await fetchVersions();
@@ -78,12 +78,9 @@ const VersionHistory = ({ open, onClose, file, onVersionChange }) => {
     }
   };
 
-  const handleDownloadVersion = async (version) => {
+  const handleDownloadCurrent = async () => {
     try {
-      await fileService.downloadFile(
-        file.id, 
-        `${file.filename}_v${version.version_number}`
-      );
+      await fileService.downloadFile(file.id, file.filename);
     } catch (error) {
       console.error('Download error:', error);
     }
@@ -145,79 +142,88 @@ const VersionHistory = ({ open, onClose, file, onVersionChange }) => {
         ) : versions.length === 0 ? (
           <Alert severity="info">No version history available</Alert>
         ) : (
-          <List>
-            {versions.map((version, index) => (
-              <ListItem
-                key={version.version}
-                sx={{
-                  border: 1,
-                  borderColor: 'divider',
-                  borderRadius: 1,
-                  mb: 1,
-                  bgcolor: index === 0 ? 'action.selected' : 'background.paper'
-                }}
-              >
-                <ListItemText
-                  primary={
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography variant="subtitle1">
-                        Version {version.version}
-                      </Typography>
-                      {index === 0 && (
-                        <Chip 
-                          label="Current" 
-                          size="small" 
-                          color="primary" 
-                        />
-                      )}
-                    </Box>
-                  }
-                  secondary={
-                    <Box>
-                      <Typography variant="body2" color="textSecondary">
-                        Size: {formatFileSize(version.size)}
-                      </Typography>
-                      <Typography variant="body2" color="textSecondary">
-                        Uploaded: {formatDate(version.uploaded_at)}
-                      </Typography>
-                      <Typography variant="caption" color="textSecondary">
-                        ({formatRelativeTime(version.uploaded_at)})
-                      </Typography>
-                      {version.notes && (
-                        <Box sx={{ mt: 1 }}>
-                          <Typography variant="caption" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <InfoIcon fontSize="small" />
-                            {version.notes}
-                          </Typography>
-                        </Box>
-                      )}
-                    </Box>
-                  }
-                />
-                <ListItemSecondaryAction>
-                  <Tooltip title="Download this version">
-                    <IconButton
-                      edge="end"
-                      onClick={() => handleDownloadVersion(version)}
-                    >
-                      <DownloadIcon />
-                    </IconButton>
-                  </Tooltip>
-                  {index !== 0 && (
-                    <Tooltip title="Restore this version">
-                      <IconButton
-                        edge="end"
-                        onClick={() => handleRollback(version.version_number)}
-                        color="primary"
-                      >
-                        <RestoreIcon />
-                      </IconButton>
-                    </Tooltip>
-                  )}
-                </ListItemSecondaryAction>
-              </ListItem>
-            ))}
-          </List>
+          <>
+            <Alert severity="info" sx={{ mb: 2 }}>
+              <Typography variant="body2">
+                Only the current version can be downloaded. To access an older version, rollback to it first.
+              </Typography>
+            </Alert>
+            <List>
+              {versions.map((version, index) => (
+                <ListItem
+                  key={version.version}
+                  sx={{
+                    border: 1,
+                    borderColor: 'divider',
+                    borderRadius: 1,
+                    mb: 1,
+                    bgcolor: index === 0 ? 'action.selected' : 'background.paper'
+                  }}
+                >
+                  <ListItemText
+                    primary={
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="subtitle1">
+                          Version {version.version}
+                        </Typography>
+                        {index === 0 && (
+                          <Chip 
+                            label="Current" 
+                            size="small" 
+                            color="primary" 
+                          />
+                        )}
+                      </Box>
+                    }
+                    secondary={
+                      <Box>
+                        <Typography variant="body2" color="textSecondary">
+                          Size: {formatFileSize(version.size)}
+                        </Typography>
+                        <Typography variant="body2" color="textSecondary">
+                          Uploaded: {formatDate(version.uploaded_at)}
+                        </Typography>
+                        <Typography variant="caption" color="textSecondary">
+                          ({formatRelativeTime(version.uploaded_at)})
+                        </Typography>
+                        {version.notes && (
+                          <Box sx={{ mt: 1 }}>
+                            <Typography variant="caption" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                              <InfoIcon fontSize="small" />
+                              {version.notes}
+                            </Typography>
+                          </Box>
+                        )}
+                      </Box>
+                    }
+                  />
+                  <ListItemSecondaryAction>
+                    {/* Only show download button for current version */}
+                    {index === 0 ? (
+                      <Tooltip title="Download current version">
+                        <IconButton
+                          edge="end"
+                          onClick={handleDownloadCurrent}
+                        >
+                          <DownloadIcon />
+                        </IconButton>
+                      </Tooltip>
+                    ) : (
+                      <Tooltip title="Rollback to this version">
+                        <IconButton
+                          edge="end"
+                          onClick={() => handleRollback(version.version_number)}
+                          color="primary"
+                        >
+                          <RestoreIcon />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                  </ListItemSecondaryAction>
+                </ListItem>
+              ))}
+            </List>
+          </>
         )}
       </DialogContent>
       

@@ -105,6 +105,14 @@ async def get_file_info(
         "versions": version_count
     }
 
+# backend/app/routes/files.py
+
+# ... existing imports ...
+# Ensure os is imported if you use os.path, or just use Path from pathlib
+from pathlib import Path 
+
+# ... existing code ...
+
 @router.post("/upload")
 async def upload(
     request: Request,
@@ -120,7 +128,7 @@ async def upload(
 
     client_ip = request.client.host if request.client else None
 
-    # 1. Określ ID i wersję (dla ścieżki zapisu)
+    # 1. Determine ID and Version
     existing_file_res = await session.execute(
         select(File)
         .where(File.uploaded_by == current_user.id)
@@ -142,30 +150,43 @@ async def upload(
         max_version = versions_res.scalar_one_or_none()
         initial_version = (max_version if max_version is not None else existing_file.current_version or 0) + 1
 
-    # 2. Zapisz plik tymczasowo, aby uzyskać rozmiar i hash
+    # 2. Save temporarily to calculate size and hash
     temp_rel_path = build_rel_path(current_user.id, file_id, file.filename, initial_version)
-    size, checksum = await save_upload_stream(file, temp_rel_path) # Używamy nowej funkcji z checksum
+    size, checksum = await save_upload_stream(file, temp_rel_path)
 
-    # 3. Sprawdzenie de-duplikacji
+    # 3. Deduplication with Physical Existence Check
     duplicate_res = await session.execute(
         select(FileVersion).where(FileVersion.checksum == checksum)
     )
-    duplicate_version = duplicate_res.scalars().first()
+    # Get all potential duplicates, not just the first one
+    potential_duplicates = duplicate_res.scalars().all()
     
-    if duplicate_version:
-        # Znaleziono duplikat: usuń plik i użyj ścieżki duplikatu
+    valid_duplicate = None
+    
+    for dup in potential_duplicates:
+        try:
+            # Check if this duplicate actually exists on disk
+            dup_abs_path = _abs_under_root(dup.filepath)
+            if Path(dup_abs_path).exists():
+                valid_duplicate = dup
+                break
+        except Exception:
+            continue
+    
+    if valid_duplicate:
+        # Found a valid duplicate that exists on disk: safe to deduplicate
         Path(_abs_under_root(temp_rel_path)).unlink(missing_ok=True)
-        final_rel_path = duplicate_version.filepath
-        final_size = duplicate_version.size
+        final_rel_path = valid_duplicate.filepath
+        final_size = valid_duplicate.size
+        is_deduplicated = True
     else:
-        # Brak duplikatu: użyj nowo przesłanego pliku
+        # No valid duplicate found (or they are missing from disk): keep the new file
         final_rel_path = temp_rel_path
         final_size = size
+        is_deduplicated = False
 
-    # 4. Zapisz/Aktualizuj rekordy w DB
-    
+    # 4. Update Database
     if existing_file:
-        # Aktualizacja istniejącego pliku
         existing_file.filepath = final_rel_path
         existing_file.size = final_size
         existing_file.current_version = initial_version
@@ -176,13 +197,12 @@ async def upload(
         session.add(v)
         await session.commit()
         
-        log_details = {"size": final_size, "version": initial_version, "duplicate": bool(duplicate_version)}
+        log_details = {"size": final_size, "version": initial_version, "duplicate": is_deduplicated}
         await log_action(session, user_id=current_user.id, action="upload", file_id=file_id, details=log_details, ip_address=client_ip)
         
-        return {"file_id": file_id, "filename": existing_file.filename, "size": final_size, "version": initial_version, "message": f"New version uploaded ({'deduplicated' if duplicate_version else 'new file'})"}
+        return {"file_id": file_id, "filename": existing_file.filename, "size": final_size, "version": initial_version, "message": f"New version uploaded ({'deduplicated' if is_deduplicated else 'new file'})"}
 
     else:
-        # Tworzenie nowego pliku (f już ma ID)
         f.filepath = final_rel_path
         f.size = final_size
         
@@ -192,10 +212,10 @@ async def upload(
         session.add(v)
         await session.commit()
     
-        log_details = {"size": final_size, "version": initial_version, "duplicate": bool(duplicate_version)}
+        log_details = {"size": final_size, "version": initial_version, "duplicate": is_deduplicated}
         await log_action(session, user_id=current_user.id, action="upload", file_id=file_id, details=log_details, ip_address=client_ip)
     
-        return {"file_id": file_id, "filename": f.filename, "size": final_size, "version": initial_version, "message": f"File created and version 1 uploaded ({'deduplicated' if duplicate_version else 'new file'})"}
+        return {"file_id": file_id, "filename": f.filename, "size": final_size, "version": initial_version, "message": f"File created and version 1 uploaded ({'deduplicated' if is_deduplicated else 'new file'})"}
 
 def resolve_current_storage_path(file_obj) -> Optional[str]:
     # preferuj główny filepath

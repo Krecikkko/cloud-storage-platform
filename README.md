@@ -1,4 +1,4 @@
-# Secure Cloud Exchange System
+# Cloud Storage System
 
 A full-stack cloud file management system designed to handle secure document and media exchange between client devices and a centralized cloud server. The application implements version control, role-based access control, and audit logging to ensure data integrity and security.
 
